@@ -31,7 +31,7 @@ class Consumer:
     def get_producer_count():
         return Consumer.count
 
-    def recv(topic: str, from_beginning: bool = False) -> str:
+    def recv(self,topic: str, from_beginning: bool = False) -> str:
         """
         Consume message(s) from the topic.
         if from_beginning=True then all the messages which were published to the topic will be returned

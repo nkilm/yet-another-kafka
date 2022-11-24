@@ -30,7 +30,7 @@ class Producer:
     def get_producer_count():
         return Producer.count
 
-    def send(topic: str, msg: str, from_beginning: bool = False):
+    def send(self,topic: str, msg: str, from_beginning: bool = False):
         """
         Publish message(s) to the topic.
         if from_beginning=True then all the messages which were published to the topic will be returned
