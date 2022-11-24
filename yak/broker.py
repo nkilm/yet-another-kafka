@@ -46,40 +46,45 @@ def status():
             "STATUS": STATUS,
             "LEADER_PORT": LEADER_PORT,
         }
-    else:
-        return {"msg": "Method not allowed, only GET method are allowed."}
 
 
 @app.route("/topic/<topic>", methods=["GET", "POST"])
-def Communication(topic):
+def broker_communication(topic):
     data: dict = None
 
     if request.method == "GET":
         # CONSUMER
 
+        if not topic_exists(topic):
+            # create a new topic if not exists
+            os.mkdir(f"{here}\\topics\\{topic}")
+
         if data is None:
             return {"is_empty": True}
-
         return data
 
-    elif request.method == "POST":
+    if request.method == "POST":
         # PRODUCER
 
-        data: dict = request.json
+        try:
+            data: dict = request.json
+            topic_path: str = f"{here}\\topics\\{topic}"
 
-        if not topic_exists(topic):
-            # create a new topic
-            os.mkdir(f"{here}\\topics\\{topic}")
-            msg = "topic created successfully"
-            # store the messages published to the topic as partitions
-        else:
-            msg = "topic exists"
-            # read the topic from partitions
+            if not topic_exists(topic):
+                # create a new topic
+                os.mkdir(topic_path)
 
-        return {"msg": msg}
+            # store the messages published to the topic
+            info: dict = request.get_json()
+            print(info)
 
-    else:
-        return {"msg": "Method not allowed, only GET and POST are allowed."}
+            with open(f"{topic_path}\\{topic}.txt", "a") as f:
+                f.write(info.get("msg") + "\n")
+
+            return {"ack": 1}
+
+        except Exception as e:
+            return {"ack": 0, "error": e}
 
 
 if __name__ == "__main__":
