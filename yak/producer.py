@@ -5,6 +5,9 @@
 - Number of producers should be dynamic
 
 """
+import requests
+from requests.exceptions import ConnectionError
+from zoo_keeper import LEADER_PORT
 
 
 class Producer:
@@ -14,6 +17,7 @@ class Producer:
 
     def __init__(self) -> None:
         Producer.count += 1
+        self.leader_url = f"http://localhost:{LEADER_PORT}"
 
     def __del__(self):
         """
@@ -27,15 +31,31 @@ class Producer:
         Producer.count -= 1
 
     @classmethod
-    def get_producer_count():
+    def get_producer_count(cls):
         return Producer.count
 
-    def send(self,topic: str, msg: str, from_beginning: bool = False):
+    def send(self, topic: str, msg: str) -> int:
         """
-        Publish message(s) to the topic.
-        if from_beginning=True then all the messages which were published to the topic will be returned
+        Publish message(s) to the topic. Returns acknowledgement. If 1 is returned then published message is
+        received by the leader, else 0 is returned.
         """
-        pass
+        ack: int = 0
+
+        try:
+            topic_url = f"{self.leader_url}/topic/{topic}"
+
+            headers = {}
+            headers["Content-Type"] = "application/json"
+
+            payload = {"msg": msg}
+
+            response = requests.post(topic_url, json=payload, headers=headers)
+            ack = response.json().get("ack")  # ack = 1
+
+        except ConnectionError:
+            print("Leader is down, please retry after 10s")
+
+        return ack
 
     def clean_topic(topic: str):
         pass
