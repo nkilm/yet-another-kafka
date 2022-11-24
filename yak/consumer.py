@@ -28,7 +28,7 @@ class Consumer:
         Consumer.count -= 1
 
     @classmethod
-    def get_producer_count():
+    def get_producer_count(cls):
         return Consumer.count
 
     def recv(self,topic: str, from_beginning: bool = False) -> str:
