@@ -7,7 +7,9 @@
 """
 import requests
 from requests.exceptions import ConnectionError
-from zoo_keeper import LEADER_PORT
+from constants import get_leader
+
+LEADER_PORT = get_leader()
 
 
 class Producer:

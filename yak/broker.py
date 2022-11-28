@@ -50,7 +50,7 @@ def status():
 
 @app.route("/topic/<topic>", methods=["GET", "POST"])
 def broker_communication(topic):
-    data: dict = None
+    global DATA
 
     if request.method == "GET":
         # CONSUMER
@@ -59,9 +59,9 @@ def broker_communication(topic):
             # create a new topic if not exists
             os.mkdir(f"{here}\\topics\\{topic}")
 
-        if data is None:
+        if DATA.get("msg") is None:
             return {"is_empty": True}
-        return data
+        return DATA
 
     if request.method == "POST":
         # PRODUCER
@@ -75,11 +75,10 @@ def broker_communication(topic):
                 os.mkdir(topic_path)
 
             # store the messages published to the topic
-            info: dict = request.get_json()
-            print(info)
+            DATA = request.get_json()
 
             with open(f"{topic_path}\\{topic}.txt", "a") as f:
-                f.write(info.get("msg") + "\n")
+                f.write(DATA.get("msg") + "\n")
 
             return {"ack": 1}
 
@@ -88,4 +87,5 @@ def broker_communication(topic):
 
 
 if __name__ == "__main__":
+    DATA: dict = {}
     app.run(debug=True, port=LEADER_PORT)

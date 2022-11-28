@@ -7,6 +7,12 @@
 
 
 """
+import time
+
+import requests
+from constants import get_leader
+
+LEADER_PORT = get_leader()
 
 
 class Consumer:
@@ -16,6 +22,12 @@ class Consumer:
 
     def __init__(self) -> None:
         Consumer.count += 1
+
+        self.leader_url = f"http://localhost:{LEADER_PORT}"
+        # self.leader_url = f"http://localhost:7070"
+        self.consumer_session = requests.session()
+        a = requests.adapters.HTTPAdapter(max_retries=3)
+        self.consumer_session.mount("http://", a)
 
     def __del__(self):
         """
@@ -31,9 +43,20 @@ class Consumer:
     def get_producer_count(cls):
         return Consumer.count
 
-    def recv(self,topic: str, from_beginning: bool = False) -> str:
+    def recv(self, topic: str, from_beginning: bool = False) -> str:
         """
         Consume message(s) from the topic.
         if from_beginning=True then all the messages which were published to the topic will be returned
         """
-        pass
+        try:
+            while True:
+                topic_url = f"{self.leader_url}/topic/{topic}"
+
+                response = self.consumer_session.get(topic_url)
+                print(response.json())
+                time.sleep(1)
+
+        except ConnectionError:
+            print("Leader is down, please retry after 10s")
+        except Exception as e:
+            print(e)
