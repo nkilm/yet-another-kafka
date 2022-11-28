@@ -20,9 +20,10 @@ Use heartbeats to check the status of the leader
 
 """
 import os
-import sys
 import pathlib
+import sys
 
+import pika
 from flask import Flask, request
 from utils import topic_exists
 
@@ -48,44 +49,42 @@ def status():
         }
 
 
-@app.route("/topic/<topic>", methods=["GET", "POST"])
+@app.route("/topic/<topic>", methods=["POST"])
 def broker_communication(topic):
-    global DATA
-
-    if request.method == "GET":
-        # CONSUMER
-
-        if not topic_exists(topic):
-            # create a new topic if not exists
-            os.mkdir(f"{here}\\topics\\{topic}")
-
-        if DATA.get("msg") is None:
-            return {"is_empty": True}
-        return DATA
 
     if request.method == "POST":
-        # PRODUCER
+        # PRODUCER & CONSUMER
 
         try:
-            data: dict = request.json
             topic_path: str = f"{here}\\topics\\{topic}"
 
             if not topic_exists(topic):
                 # create a new topic
                 os.mkdir(topic_path)
 
-            # store the messages published to the topic
-            DATA = request.get_json()
+            # print(request.get_data(as_text=True))
+            DATA: dict = request.get_json()
 
+            if DATA.get("is_consumer") is not None:
+                channel.queue_declare(queue=topic)
+                print("is consumer")
+                return {"ack": 1}
+
+            channel.queue_declare(queue=topic)
+            channel.basic_publish(exchange="", routing_key=topic, body=DATA.get("msg"))
+
+            # store the messages published to the topic
             with open(f"{topic_path}\\{topic}.txt", "a") as f:
                 f.write(DATA.get("msg") + "\n")
 
             return {"ack": 1}
 
         except Exception as e:
+            print(e)
             return {"ack": 0, "error": e}
 
 
 if __name__ == "__main__":
-    DATA: dict = {}
+    connection = pika.BlockingConnection(pika.ConnectionParameters(host="localhost"))
+    channel = connection.channel()
     app.run(debug=True, port=LEADER_PORT)
