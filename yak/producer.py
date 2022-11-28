@@ -7,7 +7,7 @@
 """
 import requests
 from requests.exceptions import ConnectionError
-from constants import get_leader
+from .constants import get_leader
 
 LEADER_PORT = get_leader()
 
@@ -58,6 +58,3 @@ class Producer:
             print("Leader is down, please retry after 10s")
 
         return ack
-
-    def clean_topic(topic: str):
-        pass
