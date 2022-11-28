@@ -8,26 +8,25 @@ Functions of zookeeper
 
 """
 import subprocess
-from random import choice
 
 import requests
 from requests.exceptions import ConnectionError
+from constants import get_brokers, update_brokers, get_leader
 
-ONLINE_PORTS: list = [6060, 7070, 8080]
-OFFLINE_PORTS: list = []
-
-LEADER_PORT: int = choice(ONLINE_PORTS)
+ONLINE_PORTS: list = get_brokers()
+LEADER_PORT: int = get_leader()
 
 
 def new_leader() -> int:
     """
     Elect new leader from available broker PORT's
     """
-    global ONLINE_PORTS, OFFLINE_PORTS, LEADER_PORT
-    OFFLINE_PORTS.append(LEADER_PORT)
-    ONLINE_PORTS.remove(LEADER_PORT)
+    global ONLINE_PORTS, LEADER_PORT
 
-    LEADER_PORT = choice(ONLINE_PORTS)
+    ONLINE_PORTS.remove(LEADER_PORT)
+    update_brokers(ONLINE_PORTS)
+
+    LEADER_PORT = get_leader()
     return LEADER_PORT
 
 
@@ -45,7 +44,7 @@ def start_broker(port: int) -> None:
 
 def check_status():
     """Periodically check the status of the leader"""
-    global LEADER_PORT, OFFLINE_PORTS, ONLINE_PORTS
+    global LEADER_PORT, ONLINE_PORTS
     try:
         _ = requests.get(f"http://localhost:{LEADER_PORT}")
 
@@ -54,7 +53,7 @@ def check_status():
 
         # Elect new leader
         LEADER_PORT = new_leader()
-        print(f"ONLINE PORTS - {ONLINE_PORTS}\nOFFLINE PORTS -{OFFLINE_PORTS}")
+        print(f"ONLINE PORTS - {ONLINE_PORTS}")
 
         # start broker on this newly elected leader
         start_broker(LEADER_PORT)
@@ -80,4 +79,5 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+
     main()
