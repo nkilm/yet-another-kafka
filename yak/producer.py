@@ -55,6 +55,6 @@ class Producer:
             ack = response.json().get("ack")  # ack = 1
 
         except ConnectionError:
-            print("Leader is down, please retry after 10s")
+            print("Leader is not online")
 
         return ack

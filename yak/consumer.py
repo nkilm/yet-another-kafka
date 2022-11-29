@@ -10,6 +10,7 @@
 import pika
 
 import requests
+from requests.exceptions import ConnectionError
 from .constants import get_leader
 
 LEADER_PORT = get_leader()
@@ -68,7 +69,7 @@ class Consumer:
             self.channel.start_consuming()
 
         except ConnectionError:
-            print("Leader is down, please retry after 10s")
+            print("Leader is not online")
         except KeyboardInterrupt:
             print("Closing...")
             # Gracefully close the connection
