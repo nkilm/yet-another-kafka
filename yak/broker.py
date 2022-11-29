@@ -1,24 +1,28 @@
 #!/usr/bin/env python3
 
 """ 
-- Total 3 instances of brokers should be created
-- One of the broker should be made as a leader
-- Leader should maintain/create topics
-- Leader should know which messages are not yet received by the consumer
+- Total 3 instances of brokers should be created✅
+- One of the broker should be made as a leader✅
+- Leader should maintain/create topics✅
+- Leader should know which messages are not yet received by the consumer✅
 - All brokers should maintain logs of all the operations
 
-Topics 
+Topics
 - topics should be stored as directories/folders, 
-	within those folders the message contents should be stored as partitions 
-- The performance of the partition is very important
+within those folders the message contents should be stored as partitions✅
 
-POST localhost:LEADER_PORT/<str:topic> - by producer
+POST localhost:LEADER_PORT/<str:topic> - by PRODUCER
+    - store the message as partition
+    - send to all consumer who are subscribed to particular topic
 
-GET localhost:LEADER_PORT/<str:topic> - by consumer
-
-Use heartbeats to check the status of the leader
+GET localhost:LEADER_PORT/<str:topic> - by CONSUMER
+    - start consuming/streaming all the messages sent to particular topic
+ 
+How to detect failure of leader?
+- Use heartbeats to check the status of the leader
 
 """
+import glob
 import os
 import pathlib
 import sys
@@ -35,6 +39,7 @@ app = Flask(__name__)
 
 LEADER_PORT = sys.argv[1]
 STATUS = 200
+MAX_LINES_PER_FILE = 5
 here = pathlib.Path(__file__).parent.resolve()
 
 
@@ -67,15 +72,42 @@ def broker_communication(topic):
 
             if DATA.get("is_consumer") is not None:
                 channel.queue_declare(queue=topic)
-                print("is consumer")
                 return {"ack": 1}
 
             channel.queue_declare(queue=topic)
             channel.basic_publish(exchange="", routing_key=topic, body=DATA.get("msg"))
 
-            # store the messages published to the topic
-            with open(f"{topic_path}\\{topic}.txt", "a") as f:
-                f.write(DATA.get("msg") + "\n")
+            # * means all if need specific format then *.txt
+            list_of_files = glob.glob(f"{topic_path}/*.txt")
+
+            if len(list_of_files) > 0:
+                # if file exists
+
+                latest_file = max(list_of_files, key=os.path.getctime)
+                file_name_count = int(latest_file.split(".")[0].split("\\")[-1])
+
+                with open(latest_file, "r") as f:
+                    data = f.readlines()
+                    no_lines_present = len(data) + 1
+
+                print("no of lines", no_lines_present)
+
+                if no_lines_present > MAX_LINES_PER_FILE:
+                    # create new file
+                    with open(f"{topic_path}/{file_name_count+1}.txt", "a+") as new_f:
+                        new_f.write(DATA.get("msg") + "\n")
+
+                else:
+                    with open(latest_file, "w") as f:
+                        # write the msg and increment line count
+                        data.append(DATA.get("msg") + "\n")
+                        f.writelines(data)
+
+            else:
+                # create new file and write the msg
+                print("first time write")
+                with open(f"{topic_path}/1.txt", "a+") as new_f:
+                    new_f.write(DATA.get("msg") + "\n")
 
             return {"ack": 1}
 
