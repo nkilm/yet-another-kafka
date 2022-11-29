@@ -37,8 +37,8 @@ def start_broker(port: int) -> None:
     subprocess.run(
         args,
         universal_newlines=True,
-        shell=False,
-        creationflags=subprocess.CREATE_NEW_CONSOLE,
+        shell=True,
+        creationflags=subprocess.DETACHED_PROCESS,
     )
 
 
@@ -46,7 +46,7 @@ def check_status():
     """Periodically check the status of the leader"""
     global LEADER_PORT, ONLINE_PORTS
     try:
-        _ = requests.get(f"http://localhost:{LEADER_PORT}")
+        _ = requests.get(f"http://localhost:{LEADER_PORT}/status")
 
     except ConnectionError:
         print(f"Leader is down - PORT: {LEADER_PORT}")
@@ -65,8 +65,8 @@ def init() -> None:
     subprocess.run(
         args,
         universal_newlines=True,
-        shell=False,
-        creationflags=subprocess.CREATE_NEW_CONSOLE,
+        shell=True,
+        creationflags=subprocess.DETACHED_PROCESS,
     )
 
 

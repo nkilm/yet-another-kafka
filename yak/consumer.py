@@ -7,10 +7,10 @@
 
 
 """
-import time
+import pika
 
 import requests
-from constants import get_leader
+from .constants import get_leader
 
 LEADER_PORT = get_leader()
 
@@ -22,12 +22,12 @@ class Consumer:
 
     def __init__(self) -> None:
         Consumer.count += 1
-
         self.leader_url = f"http://localhost:{LEADER_PORT}"
-        # self.leader_url = f"http://localhost:7070"
-        self.consumer_session = requests.session()
-        a = requests.adapters.HTTPAdapter(max_retries=3)
-        self.consumer_session.mount("http://", a)
+
+        self.connection = pika.BlockingConnection(
+            pika.ConnectionParameters(host="localhost")
+        )
+        self.channel = self.connection.channel()
 
     def __del__(self):
         """
@@ -43,20 +43,33 @@ class Consumer:
     def get_producer_count(cls):
         return Consumer.count
 
+    @staticmethod
+    def callback(ch, method, properties, body):
+        print("[x] Received - \"%s\"" % (body.decode("utf-8")))
+
     def recv(self, topic: str, from_beginning: bool = False) -> str:
         """
         Consume message(s) from the topic.
         if from_beginning=True then all the messages which were published to the topic will be returned
         """
         try:
-            while True:
-                topic_url = f"{self.leader_url}/topic/{topic}"
+            headers = {}
+            headers["Content-Type"] = "application/json"
 
-                response = self.consumer_session.get(topic_url)
-                print(response.json())
-                time.sleep(1)
+            data = {"is_consumer": 1}
+            _ = requests.post(
+                f"{self.leader_url}/topic/{topic}", json=data, headers=headers
+            )
+
+            self.channel.queue_declare(queue=topic)
+            self.channel.basic_consume(
+                queue=topic, on_message_callback=self.callback, auto_ack=True
+            )
+            self.channel.start_consuming()
 
         except ConnectionError:
             print("Leader is down, please retry after 10s")
-        except Exception as e:
-            print(e)
+        except KeyboardInterrupt:
+            print("Closing...")
+            # Gracefully close the connection
+            self.connection.close()
