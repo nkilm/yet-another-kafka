@@ -28,7 +28,7 @@ import pathlib
 import sys
 
 import pika
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from utils import topic_exists
 
 if len(sys.argv) < 2:
@@ -54,8 +54,33 @@ def status():
         }
 
 
-@app.route("/topic/<topic>", methods=["POST"])
+@app.route("/topic/<topic>", methods=["GET", "POST"])
 def broker_communication(topic):
+
+    if request.method == "GET":
+        try:
+            if request.args.get("from_beginning") is not None:
+                topic_path: str = f"{here}\\topics\\{topic}"
+
+                all_data: str = ""
+
+                list_of_files = glob.glob(f"{topic_path}/*.txt")
+
+                if len(list_of_files) == 0:
+                    return {"is_empty": 1}
+
+                # list files in the order of creation
+                sorted_files = sorted(list_of_files, key=os.path.getctime)
+
+                for file in sorted_files:
+                    with open(file) as f:
+                        msgs = f.readlines()
+                        all_data += ",".join((msg for msg in msgs))
+
+                return jsonify({"info": all_data})
+        except Exception as e:
+            print(e)
+            return {"error": e}
 
     if request.method == "POST":
         # PRODUCER & CONSUMER
