@@ -57,7 +57,7 @@ def check_status():
         _ = requests.get(f"http://localhost:{LEADER_PORT}/status")
 
     except ConnectionError:
-        print(f"Leader is down on PORT: {tcolors.fail(LEADER_PORT)}",end="\t")
+        print(f"Leader is down on PORT: {tcolors.fail(LEADER_PORT)}", end="\t")
 
         # Elect new leader
         LEADER_PORT = new_leader()
@@ -99,6 +99,12 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+
+    # Fixes the issue of color not rendering in Windows Powershell/CMD
+    import ctypes
+
+    kernel32 = ctypes.windll.kernel32
+    kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 7)
 
     try:
         main()

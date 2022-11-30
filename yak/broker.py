@@ -19,7 +19,7 @@ GET localhost:LEADER_PORT/<str:topic> - by CONSUMER
     - start consuming/streaming all the messages sent to particular topic
  
 How to detect failure of leader?
-- Use heartbeats to check the status of the leader
+- Use heartbeats to check the status of the leader✅
 
 """
 import glob
