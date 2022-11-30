@@ -31,6 +31,7 @@ import logging
 import pika
 from flask import Flask, request, jsonify
 from utils import topic_exists
+from zoo_keeper import LEADER_PORT
 
 if len(sys.argv) < 2:
     print("PORT not provided")
@@ -46,6 +47,7 @@ here = pathlib.Path(__file__).parent.resolve()
 
 # Fixes the issue of color not rendering in Windows Powershell/CMD
 import ctypes
+
 kernel32 = ctypes.windll.kernel32
 kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 7)
 

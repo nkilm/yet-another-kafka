@@ -7,9 +7,8 @@
 """
 import requests
 from requests.exceptions import ConnectionError
-from .constants import get_leader
 
-LEADER_PORT = get_leader()
+from .utils import read_metadata
 
 
 class Producer:
@@ -19,7 +18,8 @@ class Producer:
 
     def __init__(self) -> None:
         Producer.count += 1
-        self.leader_url = f"http://localhost:{LEADER_PORT}"
+        self.LEADER_PORT = read_metadata()
+        self.leader_url = f"http://localhost:{self.LEADER_PORT}"
 
     def __del__(self):
         """
@@ -55,6 +55,7 @@ class Producer:
             ack = response.json().get("ack")  # ack = 1
 
         except ConnectionError:
-            print("Leader is not online")
+            print("Leader is not online, trying to reconnect.")
+            self.LEADER_PORT = read_metadata()
 
         return ack

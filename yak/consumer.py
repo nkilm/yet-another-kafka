@@ -10,9 +10,8 @@ import pika
 
 import requests
 from requests.exceptions import ConnectionError
-from .constants import get_leader
 
-LEADER_PORT = get_leader()
+from .utils import read_metadata
 
 
 class Consumer:
@@ -22,7 +21,8 @@ class Consumer:
 
     def __init__(self) -> None:
         Consumer.count += 1
-        self.leader_url = f"http://localhost:{LEADER_PORT}"
+        self.LEADER_PORT = read_metadata()
+        self.leader_url = f"http://localhost:{self.LEADER_PORT}"
 
         self.connection = pika.BlockingConnection(
             pika.ConnectionParameters(host="localhost")
@@ -81,6 +81,9 @@ class Consumer:
 
         except ConnectionError:
             print("Leader is not online")
+            self.LEADER_PORT = read_metadata()
+            self.recv(topic, from_beginning=from_beginning)
+
         except KeyboardInterrupt:
             print("Closing...")
             # Gracefully close the connection
