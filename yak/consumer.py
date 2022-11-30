@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 
 """ 
-- Consumer consumes the messages from the topic 
+- Consumer consumes the messages from the topic✅
 - if --from-beginning is given before starting the consumer process then 
-  all the messages which have been sent to the topic previously should be consumed
-
+  all the messages which have been sent to the topic previously should be consumed✅
 
 """
 import pika
@@ -46,7 +45,7 @@ class Consumer:
 
     @staticmethod
     def callback(ch, method, properties, body):
-        print("[x] Received - \"%s\"" % (body.decode("utf-8")))
+        print('[x] Received - "%s"' % (body.decode("utf-8")))
 
     def recv(self, topic: str, from_beginning: bool = False) -> str:
         """
@@ -56,6 +55,18 @@ class Consumer:
         try:
             headers = {}
             headers["Content-Type"] = "application/json"
+
+            if from_beginning:
+                response = requests.get(
+                    f"{self.leader_url}/topic/{topic}?from_beginning=1"
+                )
+                all_msgs = dict(response.json())
+
+                if all_msgs.get("info") is not None:
+                    for msg in all_msgs.get("info").split(","):
+                        print(msg, end="")
+                elif all_msgs.get("is_empty") is not None:
+                    pass
 
             data = {"is_consumer": 1}
             _ = requests.post(
@@ -74,3 +85,5 @@ class Consumer:
             print("Closing...")
             # Gracefully close the connection
             self.connection.close()
+        except Exception as e:
+            print(e)
