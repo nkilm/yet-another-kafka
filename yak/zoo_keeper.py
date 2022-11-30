@@ -2,19 +2,23 @@
 
 """
 Functions of zookeeper
-- keep track of the leader - Make contacts regularly with the leader
-- Elect leader from available brokers
-- always running
+- keep track of the leader - Make contacts regularly with the leader✅
+- Elect leader from available brokers✅
+- always running✅
 
 """
+import sys
+import time
+import sched
 import subprocess
 
 import requests
 from requests.exceptions import ConnectionError
-from utils import update_metadata
+from utils import update_metadata, tcolors
 
 ONLINE_PORTS: list = sorted([6060, 7070, 8080])
 LEADER_PORT: int = ONLINE_PORTS[0]
+HEARTBEAT_FREQUENCY: int = 5  # in seconds
 
 
 def new_leader() -> int:
@@ -24,6 +28,9 @@ def new_leader() -> int:
     global ONLINE_PORTS, LEADER_PORT
 
     ONLINE_PORTS.remove(LEADER_PORT)
+    if len(ONLINE_PORTS) == 0:
+        print(tcolors.fail("All brokers are OFFLINE"))
+        sys.exit(0)
 
     LEADER_PORT = ONLINE_PORTS[0]
     update_metadata(LEADER_PORT)
@@ -44,24 +51,32 @@ def start_broker(port: int) -> None:
 
 
 def check_status():
-    """Periodically check the status of the leader"""
+    """Check the status of the leader"""
     global LEADER_PORT, ONLINE_PORTS
     try:
         _ = requests.get(f"http://localhost:{LEADER_PORT}/status")
 
     except ConnectionError:
-        print(f"Leader is down - PORT: {LEADER_PORT}")
+        print(f"Leader is down on PORT: {tcolors.fail(LEADER_PORT)}",end="\t")
 
         # Elect new leader
         LEADER_PORT = new_leader()
-        print(f"ONLINE PORTS - {ONLINE_PORTS}")
+        print(f"Available Brokers - {tcolors.ok(ONLINE_PORTS)}")
 
         # start broker on this newly elected leader
         start_broker(LEADER_PORT)
 
 
+def heartbeats(sc):
+    """Periodically check the status of the leader"""
+
+    check_status()
+    sc.enter(HEARTBEAT_FREQUENCY, 1, heartbeats, (sc,))
+
+
 def init() -> None:
     """Start the leader"""
+    update_metadata(LEADER_PORT)
     args = f"python yak/broker.py {LEADER_PORT}".split(" ")
     subprocess.run(
         args,
@@ -73,12 +88,19 @@ def init() -> None:
 
 def main() -> None:
 
-    print("Zookeeper has started")
-
+    print(tcolors.ok("Zookeeper has started"))
     init()
-    check_status()
+
+    # heartbeats
+    s = sched.scheduler(time.time, time.sleep)
+
+    s.enter(HEARTBEAT_FREQUENCY, 1, heartbeats, (s,))
+    s.run()
 
 
 if __name__ == "__main__":
 
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print(tcolors.warning("Stopping zookeeper..."))
