@@ -7,14 +7,14 @@ Functions of zookeeper
 - always running✅
 
 """
-import sys
-import time
 import sched
 import subprocess
+import sys
+import time
 
 import requests
 from requests.exceptions import ConnectionError
-from utils import update_metadata, tcolors
+from utils import tcolors, update_metadata
 
 ONLINE_PORTS: list = sorted([6060, 7070, 8080])
 LEADER_PORT: int = ONLINE_PORTS[0]
