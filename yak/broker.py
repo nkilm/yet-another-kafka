@@ -5,7 +5,7 @@
 - One of the broker should be made as a leader✅
 - Leader should maintain/create topics✅
 - Leader should know which messages are not yet received by the consumer✅
-- All brokers should maintain logs of all the operations
+- All brokers should maintain logs of all the operations✅
 
 Topics
 - topics should be stored as directories/folders, 
