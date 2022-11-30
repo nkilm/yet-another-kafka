@@ -26,6 +26,7 @@ import glob
 import os
 import pathlib
 import sys
+import logging
 
 import pika
 from flask import Flask, request, jsonify
@@ -37,10 +38,18 @@ if len(sys.argv) < 2:
 
 app = Flask(__name__)
 
+
 LEADER_PORT = sys.argv[1]
 STATUS = 200
 MAX_LINES_PER_FILE = 5
 here = pathlib.Path(__file__).parent.resolve()
+
+logger = logging.getLogger("yak")
+logging.basicConfig(filename=f"{here}/logs/operations.log", level=logging.INFO)
+
+for log_name, log_obj in logging.Logger.manager.loggerDict.items():
+    if log_name != "yak":
+        log_obj.disabled = True
 
 
 @app.route("/status", methods=["GET"])
@@ -114,8 +123,6 @@ def broker_communication(topic):
                 with open(latest_file, "r") as f:
                     data = f.readlines()
                     no_lines_present = len(data) + 1
-
-                print("no of lines", no_lines_present)
 
                 if no_lines_present > MAX_LINES_PER_FILE:
                     # create new file
