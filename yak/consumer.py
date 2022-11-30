@@ -7,7 +7,6 @@
 
 """
 import pika
-
 import requests
 from requests.exceptions import ConnectionError
 
