@@ -23,13 +23,13 @@ How to detect failure of leader?
 
 """
 import glob
+import logging
 import os
 import pathlib
 import sys
-import logging
 
 import pika
-from flask import Flask, request, jsonify
+from flask import Flask, jsonify, request
 from utils import topic_exists
 from zoo_keeper import LEADER_PORT
 
