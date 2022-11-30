@@ -5,7 +5,7 @@
 - One of the broker should be made as a leader✅
 - Leader should maintain/create topics✅
 - Leader should know which messages are not yet received by the consumer✅
-- All brokers should maintain logs of all the operations
+- All brokers should maintain logs of all the operations✅
 
 Topics
 - topics should be stored as directories/folders, 
@@ -26,9 +26,10 @@ import glob
 import os
 import pathlib
 import sys
+import logging
 
 import pika
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from utils import topic_exists
 
 if len(sys.argv) < 2:
@@ -37,10 +38,18 @@ if len(sys.argv) < 2:
 
 app = Flask(__name__)
 
+
 LEADER_PORT = sys.argv[1]
 STATUS = 200
 MAX_LINES_PER_FILE = 5
 here = pathlib.Path(__file__).parent.resolve()
+
+logger = logging.getLogger("yak")
+logging.basicConfig(filename=f"{here}/logs/operations.log", level=logging.INFO)
+
+for log_name, log_obj in logging.Logger.manager.loggerDict.items():
+    if log_name != "yak":
+        log_obj.disabled = True
 
 
 @app.route("/status", methods=["GET"])
@@ -54,8 +63,33 @@ def status():
         }
 
 
-@app.route("/topic/<topic>", methods=["POST"])
+@app.route("/topic/<topic>", methods=["GET", "POST"])
 def broker_communication(topic):
+
+    if request.method == "GET":
+        try:
+            if request.args.get("from_beginning") is not None:
+                topic_path: str = f"{here}\\topics\\{topic}"
+
+                all_data: str = ""
+
+                list_of_files = glob.glob(f"{topic_path}/*.txt")
+
+                if len(list_of_files) == 0:
+                    return {"is_empty": 1}
+
+                # list files in the order of creation
+                sorted_files = sorted(list_of_files, key=os.path.getctime)
+
+                for file in sorted_files:
+                    with open(file) as f:
+                        msgs = f.readlines()
+                        all_data += ",".join((msg for msg in msgs))
+
+                return jsonify({"info": all_data})
+        except Exception as e:
+            print(e)
+            return {"error": e}
 
     if request.method == "POST":
         # PRODUCER & CONSUMER
@@ -89,8 +123,6 @@ def broker_communication(topic):
                 with open(latest_file, "r") as f:
                     data = f.readlines()
                     no_lines_present = len(data) + 1
-
-                print("no of lines", no_lines_present)
 
                 if no_lines_present > MAX_LINES_PER_FILE:
                     # create new file
