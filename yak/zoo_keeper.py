@@ -11,10 +11,10 @@ import subprocess
 
 import requests
 from requests.exceptions import ConnectionError
-from constants import get_brokers, update_brokers, get_leader
+from utils import update_metadata
 
-ONLINE_PORTS: list = get_brokers()
-LEADER_PORT: int = get_leader()
+ONLINE_PORTS: list = sorted([6060, 7070, 8080])
+LEADER_PORT: int = ONLINE_PORTS[0]
 
 
 def new_leader() -> int:
@@ -24,9 +24,10 @@ def new_leader() -> int:
     global ONLINE_PORTS, LEADER_PORT
 
     ONLINE_PORTS.remove(LEADER_PORT)
-    update_brokers(ONLINE_PORTS)
 
-    LEADER_PORT = get_leader()
+    LEADER_PORT = ONLINE_PORTS[0]
+    update_metadata(LEADER_PORT)
+
     return LEADER_PORT
 
 

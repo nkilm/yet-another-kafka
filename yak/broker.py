@@ -31,6 +31,7 @@ import logging
 import pika
 from flask import Flask, request, jsonify
 from utils import topic_exists
+from zoo_keeper import LEADER_PORT
 
 if len(sys.argv) < 2:
     print("PORT not provided")
@@ -44,8 +45,20 @@ STATUS = 200
 MAX_LINES_PER_FILE = 5
 here = pathlib.Path(__file__).parent.resolve()
 
+# Fixes the issue of color not rendering in Windows Powershell/CMD
+import ctypes
+
+kernel32 = ctypes.windll.kernel32
+kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 7)
+
 logger = logging.getLogger("yak")
-logging.basicConfig(filename=f"{here}/logs/operations.log", level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    handlers=[
+        logging.FileHandler(f"{here}/logs/operations.log"),
+        logging.StreamHandler(sys.stdout),
+    ],
+)
 
 for log_name, log_obj in logging.Logger.manager.loggerDict.items():
     if log_name != "yak":
