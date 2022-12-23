@@ -2,7 +2,10 @@
 Built with Flask and Pika
 
 ---
-
+### Pre-requisites
+- Rabbitmq server
+> Guide for Installing - [rabbitmq installation](https://youtu.be/rmAjG9l9Mmo?list=PLalrWAGybpB-UHbRDhFsBgXJM1g6T4IvO)
+- Python3
 ### How to setup locally?
 > After `git clone` and `cd` to project folder
 - Create Virtual Environment
